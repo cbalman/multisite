@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { sitePublicUrl } from "../lib/host";
+import { getSubdomain, platformOrigin, sitePanelUrl, sitePublicUrl } from "../lib/host";
 
 type User = { id: number; name: string; email: string; role: string };
 type Site = {
@@ -14,6 +14,7 @@ type Site = {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const subdomain = getSubdomain();
   const [user, setUser] = useState<User | null>(null);
   const [site, setSite] = useState<Site | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,29 +26,50 @@ export default function DashboardPage() {
       return;
     }
 
-    Promise.all([api.get<User>("/auth/me"), api.get<Site>("/me/site")])
-      .then(([u, s]) => {
+    api
+      .get<User>("/auth/me")
+      .then((u) => {
+        if (u.role === "superadmin") {
+          window.location.href = `${platformOrigin()}/admin`;
+          return null;
+        }
         setUser(u);
+        return api.get<Site>("/me/site");
+      })
+      .then((s) => {
+        if (!s) return;
+
+        // On platform host → send client to their subdomain panel
+        if (!subdomain) {
+          window.location.href = sitePanelUrl(s.slug);
+          return;
+        }
+
+        // On subdomain → must own this site
+        if (s.slug !== subdomain) {
+          setError("No tenés permiso para administrar este sitio.");
+          return;
+        }
+
         setSite(s);
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Error");
-        if (String(err.message).includes("autenticado") || String(err).includes("401")) {
-          localStorage.removeItem("access_token");
-          navigate("/ingresar");
-        }
+        localStorage.removeItem("access_token");
+        navigate("/ingresar");
       });
-  }, [navigate]);
+  }, [navigate, subdomain]);
 
   function logout() {
     localStorage.removeItem("access_token");
-    navigate("/");
+    navigate(subdomain ? "/" : "/");
   }
 
-  if (error && !user) {
+  if (error && !site) {
     return (
       <div className="shell">
         <p className="error">{error}</p>
+        <Link to="/ingresar">Ingresar</Link>
       </div>
     );
   }
@@ -104,10 +126,7 @@ export default function DashboardPage() {
           Ver mi sitio
         </a>
         <p style={{ marginTop: "1rem", color: "var(--muted)" }}>
-          Próximo: publicaciones, contacto, onboarding y admin.
-        </p>
-        <p>
-          <Link to="/">Volver al inicio</Link>
+          Panel en {site.slug}.localhost/panel
         </p>
       </section>
     </div>

@@ -32,7 +32,9 @@ def validate_slug(value: str) -> str:
     return slug
 
 
-class RegisterRequest(BaseModel):
+class CreateSiteRequest(BaseModel):
+    """Only Super Admin creates storefronts (sold accounts)."""
+
     name: str = Field(min_length=2, max_length=120)
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
@@ -50,9 +52,27 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
-    access_token: str
+class TotpCodeRequest(BaseModel):
+    code: str = Field(min_length=6, max_length=8)
+
+
+class LoginResponse(BaseModel):
+    """Unified login response: ok | need_2fa | setup_2fa."""
+
+    status: str
+    access_token: str | None = None
+    temp_token: str | None = None
     token_type: str = "bearer"
+    role: str | None = None
+    name: str | None = None
+    message: str | None = None
+
+
+class TotpSetupOut(BaseModel):
+    secret: str
+    otpauth_url: str
+    qr_data_url: str
+    message: str
 
 
 class UserOut(BaseModel):
@@ -60,8 +80,27 @@ class UserOut(BaseModel):
     name: str
     email: EmailStr
     role: str
+    totp_enabled: bool = False
 
     model_config = {"from_attributes": True}
+
+
+class SiteAdminOut(BaseModel):
+    id: int
+    slug: str
+    name: str
+    status: str
+    owner_id: int
+    owner_name: str
+    owner_email: str
+    created_at: str | None = None
+
+
+class SiteCreatedOut(BaseModel):
+    user: UserOut
+    site: SiteAdminOut
+    full_host: str
+    message: str
 
 
 class SitePublicOut(BaseModel):

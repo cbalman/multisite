@@ -5,12 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
+from app.core.bootstrap import ensure_schema_patches, ensure_superadmin
 from app.core.config import settings
 from app.core.database import Base, engine
 
 # MVP: create tables on startup. Alembic migrations take over later.
 Base.metadata.create_all(bind=engine)
+ensure_schema_patches()
 Path(settings.MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
+ensure_superadmin()
+
 
 app = FastAPI(
     title=settings.APP_NAME,

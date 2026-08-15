@@ -22,6 +22,10 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = "http://localhost,http://localhost:5173"
 
+    SUPERADMIN_NAME: str = "Super Admin"
+    SUPERADMIN_EMAIL: str = "admin@multisite.local"
+    SUPERADMIN_PASSWORD: str = "admin123456"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

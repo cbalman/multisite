@@ -25,6 +25,22 @@ export function getSubdomain(): string | null {
   return null;
 }
 
+export function platformOrigin(): string {
+  const protocol = window.location.protocol;
+  const port = window.location.port ? `:${window.location.port}` : "";
+  const host = window.location.hostname.toLowerCase();
+
+  if (host === "localhost" || host.endsWith(".localhost")) {
+    return `${protocol}//localhost${port}`;
+  }
+
+  const parts = host.split(".");
+  if (parts.length >= 3) {
+    return `${protocol}//${parts.slice(1).join(".")}${port}`;
+  }
+  return `${protocol}//${host}${port}`;
+}
+
 export function sitePublicUrl(slug: string): string {
   const protocol = window.location.protocol;
   const hostname = window.location.hostname;
@@ -35,5 +51,13 @@ export function sitePublicUrl(slug: string): string {
   }
 
   const base = hostname.replace(/^www\./, "");
-  return `${protocol}//${slug}.${base}${port}`;
+  const root = base.split(".").length >= 2 ? base.split(".").slice(-2).join(".") : base;
+  // If already on subdomain, rebuild from root domain
+  const parts = hostname.replace(/^www\./, "").split(".");
+  const domain = parts.length >= 3 ? parts.slice(1).join(".") : parts.join(".");
+  return `${protocol}//${slug}.${domain}${port}`;
+}
+
+export function sitePanelUrl(slug: string): string {
+  return `${sitePublicUrl(slug)}/panel`;
 }

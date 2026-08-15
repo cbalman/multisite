@@ -61,17 +61,29 @@ Registro de prueba: elegí un slug, creá el sitio, y abrí `{slug}.localhost`.
 
 ## Decisiones de producto (MVP)
 
+- **Alta de clientes solo por Super Admin** (modelo de venta de vidrieras).
+- El cliente **no se auto-registra**: recibe email/contraseña y administra su panel.
 - **1 video por publicación** (gratis). Más videos = plan premium después.
 - Fotos: varias por publicación (límites por tamaño en config).
 - Tenant isolation: todo filtrado por `site_id` / ownership.
 - Slugs reservados: `www`, `api`, `admin`, `app`, etc.
 - Dominio comercial: configurable vía `APP_DOMAIN` (aún sin marca registrada).
 
+## Accesos locales
+
+| Rol | Email | Password | Va a |
+|-----|-------|----------|------|
+| Super Admin | `admin@multisite.com` | `admin123456` + **Google Authenticator** | `/admin` |
+| Cliente (ej. María) | el que creés en admin | la que definas | `{slug}.localhost/panel` |
+
+La primera vez que entra el Super Admin, debe escanear el QR con Google Authenticator.
+Después siempre pide contraseña + código de 6 dígitos.
+
 ## Próximos pasos de desarrollo
 
 1. CRUD de publicaciones (foto + 1 video)
 2. Edición de perfil / WhatsApp / redes
-3. Onboarding corto (3 pasos)
-4. Super admin + impersonation
+3. Onboarding corto post-primer-ingreso del cliente
+4. Suspender sitio + impersonation
 5. Tracking visitas + clicks WhatsApp
 6. Spaces (DO) para media en producción

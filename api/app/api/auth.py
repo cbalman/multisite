@@ -1,72 +1,29 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
 from app.core.database import get_db
-from app.core.security import create_access_token, hash_password, verify_password
-from app.core.config import settings
-from app.models import Site, SiteStatus, User, UserRole
-from app.schemas import (
-    LoginRequest,
-    RegisterRequest,
-    SlugCheckOut,
-    TokenResponse,
-    UserOut,
-    validate_slug,
+from app.core.deps import (
+    get_2fa_pending_superadmin,
+    get_2fa_setup_superadmin,
+    get_current_user,
 )
+from app.core.security import (
+    create_access_token,
+    create_temp_token,
+    generate_totp_secret,
+    qr_data_url,
+    totp_uri,
+    verify_password,
+    verify_totp,
+)
+from app.models import User, UserRole
+from app.schemas import LoginRequest, LoginResponse, TotpCodeRequest, TotpSetupOut, UserOut
 
 router = APIRouter()
 
 
-@router.get("/slug-available/{slug}", response_model=SlugCheckOut)
-def check_slug(slug: str, db: Session = Depends(get_db)):
-    try:
-        clean = validate_slug(slug)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    exists = db.scalar(select(Site.id).where(Site.slug == clean))
-    return SlugCheckOut(
-        slug=clean,
-        available=exists is None,
-        full_host=f"{clean}.{settings.APP_DOMAIN}",
-    )
-
-
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
-    email_taken = db.scalar(select(User.id).where(User.email == payload.email.lower()))
-    if email_taken:
-        raise HTTPException(status_code=400, detail="Ese email ya está registrado")
-
-    slug_taken = db.scalar(select(Site.id).where(Site.slug == payload.slug))
-    if slug_taken:
-        raise HTTPException(status_code=400, detail="Esa dirección ya está en uso")
-
-    user = User(
-        name=payload.name.strip(),
-        email=payload.email.lower(),
-        password_hash=hash_password(payload.password),
-        role=UserRole.USER,
-    )
-    db.add(user)
-    db.flush()
-
-    site = Site(
-        owner_id=user.id,
-        slug=payload.slug,
-        name=payload.site_name.strip(),
-        status=SiteStatus.ACTIVE,
-    )
-    db.add(site)
-    db.commit()
-
-    token = create_access_token(str(user.id), {"role": user.role.value})
-    return TokenResponse(access_token=token)
-
-
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=LoginResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.email == payload.email.lower()))
     if not user or not verify_password(payload.password, user.password_hash):
@@ -74,8 +31,95 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Usuario suspendido")
 
+    # Super Admin always goes through 2FA (setup or verify)
+    if user.role == UserRole.SUPERADMIN:
+        if not user.totp_enabled:
+            temp = create_temp_token(str(user.id), "setup_2fa", {"role": user.role.value})
+            return LoginResponse(
+                status="setup_2fa",
+                temp_token=temp,
+                role=user.role.value,
+                name=user.name,
+                message="Configurá Google Authenticator para continuar.",
+            )
+        temp = create_temp_token(str(user.id), "pre_2fa", {"role": user.role.value})
+        return LoginResponse(
+            status="need_2fa",
+            temp_token=temp,
+            role=user.role.value,
+            name=user.name,
+            message="Ingresá el código de Google Authenticator.",
+        )
+
     token = create_access_token(str(user.id), {"role": user.role.value})
-    return TokenResponse(access_token=token)
+    return LoginResponse(
+        status="ok",
+        access_token=token,
+        role=user.role.value,
+        name=user.name,
+    )
+
+
+@router.get("/2fa/setup", response_model=TotpSetupOut)
+def totp_setup(
+    user: User = Depends(get_2fa_setup_superadmin),
+    db: Session = Depends(get_db),
+):
+    if user.totp_enabled:
+        raise HTTPException(status_code=400, detail="2FA ya está activado")
+
+    secret = generate_totp_secret()
+    user.totp_secret = secret
+    db.commit()
+
+    uri = totp_uri(secret, user.email)
+    return TotpSetupOut(
+        secret=secret,
+        otpauth_url=uri,
+        qr_data_url=qr_data_url(uri),
+        message="Escaneá el QR con Google Authenticator y confirmá con el código de 6 dígitos.",
+    )
+
+
+@router.post("/2fa/confirm", response_model=LoginResponse)
+def totp_confirm(
+    payload: TotpCodeRequest,
+    user: User = Depends(get_2fa_setup_superadmin),
+    db: Session = Depends(get_db),
+):
+    if not user.totp_secret:
+        raise HTTPException(status_code=400, detail="Primero pedí el QR de configuración")
+    if not verify_totp(user.totp_secret, payload.code):
+        raise HTTPException(status_code=400, detail="Código inválido. Probá de nuevo.")
+
+    user.totp_enabled = True
+    db.commit()
+
+    token = create_access_token(str(user.id), {"role": user.role.value})
+    return LoginResponse(
+        status="ok",
+        access_token=token,
+        role=user.role.value,
+        name=user.name,
+        message="Google Authenticator activado.",
+    )
+
+
+@router.post("/2fa/verify", response_model=LoginResponse)
+def totp_verify(
+    payload: TotpCodeRequest,
+    user: User = Depends(get_2fa_pending_superadmin),
+):
+    if not user.totp_secret or not verify_totp(user.totp_secret, payload.code):
+        raise HTTPException(status_code=400, detail="Código inválido. Probá de nuevo.")
+
+    token = create_access_token(str(user.id), {"role": user.role.value})
+    return LoginResponse(
+        status="ok",
+        access_token=token,
+        role=user.role.value,
+        name=user.name,
+    )
 
 
 @router.get("/me", response_model=UserOut)
