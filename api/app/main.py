@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,12 +10,18 @@ from app.core.bootstrap import ensure_schema_patches, ensure_superadmin
 from app.core.config import settings
 from app.core.database import Base, engine
 
-# MVP: create tables on startup. Alembic migrations take over later.
-Base.metadata.create_all(bind=engine)
-ensure_schema_patches()
-Path(settings.MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
-ensure_superadmin()
 
+def _bootstrap_runtime() -> None:
+    """Skipped when TESTING=1 — tests manage schema themselves."""
+    if os.getenv("TESTING") == "1":
+        return
+    Base.metadata.create_all(bind=engine)
+    ensure_schema_patches()
+    Path(settings.MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
+    ensure_superadmin()
+
+
+_bootstrap_runtime()
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -31,6 +38,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Media folder must exist even in tests (StaticFiles checks at mount time)
+Path(settings.MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
 app.mount("/media", StaticFiles(directory=settings.MEDIA_ROOT), name="media")
 app.include_router(api_router, prefix="/api")
 

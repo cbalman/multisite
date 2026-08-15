@@ -79,7 +79,19 @@ Registro de prueba: elegí un slug, creá el sitio, y abrí `{slug}.localhost`.
 La primera vez que entra el Super Admin, debe escanear el QR con Google Authenticator.
 Después siempre pide contraseña + código de 6 dígitos.
 
-## Próximos pasos de desarrollo
+## Tests
+
+Los tests de API corren contra una base dedicada `multisite_test` (no tocan la DB de desarrollo).
+
+```bash
+# con el stack levantado
+docker compose exec api pytest -q
+
+# o
+chmod +x scripts/test.sh && ./scripts/test.sh
+```
+
+Cobertura actual: health, auth (login cliente + 2FA admin), alta de sitios por Super Admin, sitios públicos, aislamiento entre tenants.
 
 1. CRUD de publicaciones (foto + 1 video)
 2. Edición de perfil / WhatsApp / redes
