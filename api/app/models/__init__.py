@@ -89,6 +89,7 @@ class Site(Base):
     whatsapp: Mapped[str | None] = mapped_column(String(32), nullable=True)
     phone1: Mapped[str | None] = mapped_column(String(32), nullable=True)
     phone2: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

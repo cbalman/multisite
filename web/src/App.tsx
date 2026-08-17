@@ -4,6 +4,7 @@ import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import AdminPage from "./pages/AdminPage";
 import StorefrontPage from "./pages/StorefrontPage";
+import OnboardingPage from "./pages/OnboardingPage";
 import PanelLayout from "./components/PanelLayout";
 import DashboardHome from "./pages/DashboardHome";
 import ProfilePage from "./pages/ProfilePage";
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="publicaciones" element={<PublicationsPage />} />
       <Route path="publicaciones/nueva" element={<PublicationFormPage />} />
       <Route path="publicaciones/:id" element={<PublicationFormPage />} />
+      <Route path="onboarding" element={<OnboardingPage />} />
     </Route>
   );
 

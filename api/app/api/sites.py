@@ -51,6 +51,18 @@ def update_site(
     return site_out(site, db)
 
 
+@router.post("/site/onboarding/complete", response_model=SitePublicOut)
+def complete_onboarding(site: Site = Depends(get_owned_site), db: Session = Depends(get_db)):
+    site.onboarding_completed = True
+    db.commit()
+    site = db.scalar(
+        select(Site)
+        .where(Site.id == site.id)
+        .options(selectinload(Site.socials), selectinload(Site.category))
+    )
+    return site_out(site, db)
+
+
 @router.put("/site/socials", response_model=SitePublicOut)
 def update_socials(
     payload: SocialsUpdateRequest,

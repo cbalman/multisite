@@ -144,6 +144,7 @@ def site_owner(db: Session) -> tuple[User, Site]:
         name="Maria Reposteria",
         status=SiteStatus.ACTIVE,
         whatsapp="5493411111111",
+        onboarding_completed=True,
     )
     db.add(site)
     db.flush()
@@ -166,6 +167,30 @@ def other_owner(db: Session) -> tuple[User, Site]:
         slug="ricardo",
         name="Ricardo Bike",
         status=SiteStatus.ACTIVE,
+        onboarding_completed=True,
+    )
+    db.add(site)
+    db.flush()
+    return user, site
+
+
+@pytest.fixture
+def fresh_owner(db: Session) -> tuple[User, Site]:
+    user = User(
+        name="Ana",
+        email="ana@test.com",
+        password_hash=hash_password("password123"),
+        role=UserRole.USER,
+        is_active=True,
+    )
+    db.add(user)
+    db.flush()
+    site = Site(
+        owner_id=user.id,
+        slug="ana",
+        name="Ana Tattoos",
+        status=SiteStatus.ACTIVE,
+        onboarding_completed=False,
     )
     db.add(site)
     db.flush()

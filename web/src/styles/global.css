@@ -334,10 +334,13 @@ input {
   font: inherit;
 }
 
-.dash {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  min-height: 100vh;
+.dash-onboarding {
+  grid-template-columns: 1fr;
+}
+
+.dash-onboarding .dash-main {
+  width: min(560px, calc(100% - 2rem));
+  margin: 0 auto;
 }
 
 .dash-side {

@@ -121,6 +121,7 @@ class SitePublicOut(BaseModel):
     socials: list[dict]
     whatsapp_url: str | None = None
     publication_count: int | None = None
+    onboarding_completed: bool = False
 
     model_config = {"from_attributes": True}
 

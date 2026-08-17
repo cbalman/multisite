@@ -42,6 +42,7 @@ def site_out(site: Site, db: Session | None = None) -> SitePublicOut:
         socials=[{"platform": s.platform, "url": s.url} for s in site.socials],
         whatsapp_url=whatsapp_url(site.whatsapp, profile_message(site.name)),
         publication_count=count,
+        onboarding_completed=site.onboarding_completed,
     )
 
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { PanelContext } from "../lib/panel-context";
 import { getSubdomain, platformOrigin, sitePanelUrl, sitePublicUrl } from "../lib/host";
@@ -15,6 +15,7 @@ const NAV = [
 
 export default function PanelLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const subdomain = getSubdomain();
   const [user, setUser] = useState<User | null>(null);
   const [site, setSite] = useState<Site | null>(null);
@@ -61,6 +62,14 @@ export default function PanelLayout() {
       });
   }, [navigate, subdomain]);
 
+  useEffect(() => {
+    if (!site) return;
+    const onOnboarding = location.pathname.startsWith("/panel/onboarding");
+    if (!site.onboarding_completed && !onOnboarding) {
+      navigate("/panel/onboarding", { replace: true });
+    }
+  }, [site, location.pathname, navigate]);
+
   function logout() {
     localStorage.removeItem("access_token");
     navigate("/");
@@ -84,10 +93,12 @@ export default function PanelLayout() {
   }
 
   const publicUrl = sitePublicUrl(site.slug);
+  const onboarding = location.pathname.startsWith("/panel/onboarding");
 
   return (
     <PanelContext.Provider value={{ user, site, refreshSite: loadSite }}>
-      <div className="dash">
+      <div className={onboarding ? "dash dash-onboarding" : "dash"}>
+        {!onboarding && (
         <aside className="dash-side">
           <div className="brand">Multisite</div>
           <nav className="dash-nav">
@@ -106,9 +117,10 @@ export default function PanelLayout() {
             Ver mi sitio
           </a>
         </aside>
+        )}
         <div className="dash-main">
           <header className="dash-top">
-            <strong>{site.name}</strong>
+            <strong>{onboarding ? "Configurar tu sitio" : site.name}</strong>
             <div className="nav-actions">
               <span>{user.name}</span>
               <button className="btn btn-ghost" type="button" onClick={logout}>

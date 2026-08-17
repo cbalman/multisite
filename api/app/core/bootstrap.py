@@ -12,6 +12,7 @@ def ensure_schema_patches() -> None:
     statements = [
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(64)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE sites ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE",
     ]
     with engine.begin() as conn:
         for stmt in statements:

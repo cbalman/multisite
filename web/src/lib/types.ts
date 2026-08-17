@@ -26,6 +26,7 @@ export type Site = {
   socials: Social[];
   whatsapp_url: string | null;
   publication_count: number | null;
+  onboarding_completed: boolean;
 };
 
 export type Publication = {

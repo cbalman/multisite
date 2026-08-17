@@ -229,3 +229,33 @@ def test_categories_list(client, categories):
     slugs = {c["slug"] for c in res.json()}
     assert "gastronomia" in slugs
     assert "otros" in slugs
+
+
+def test_new_site_needs_onboarding(client, fresh_owner):
+    token = login_user(client, "ana@test.com", "password123")
+    res = client.get("/api/me/site", headers=auth_header(token))
+    assert res.status_code == 200
+    assert res.json()["onboarding_completed"] is False
+
+
+def test_complete_onboarding(client, fresh_owner):
+    token = login_user(client, "ana@test.com", "password123")
+    res = client.post("/api/me/site/onboarding/complete", headers=auth_header(token))
+    assert res.status_code == 200, res.text
+    assert res.json()["onboarding_completed"] is True
+
+    again = client.get("/api/me/site", headers=auth_header(token))
+    assert again.json()["onboarding_completed"] is True
+
+
+def test_existing_client_onboarding_already_done(client, site_owner):
+    token = login_user(client, "maria@test.com", "password123")
+    res = client.get("/api/me/site", headers=auth_header(token))
+    assert res.json()["onboarding_completed"] is True
+
+
+def test_cannot_set_onboarding_via_patch(client, fresh_owner):
+    token = login_user(client, "ana@test.com", "password123")
+    client.patch("/api/me/site", headers=auth_header(token), json={"onboarding_completed": True})
+    res = client.get("/api/me/site", headers=auth_header(token))
+    assert res.json()["onboarding_completed"] is False
