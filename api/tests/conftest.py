@@ -32,6 +32,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
+from app.core.categories import seed_categories
 from app.core.database import Base, get_db
 from app.core.security import hash_password
 from app.models import Site, SiteStatus, User, UserRole
@@ -169,6 +170,12 @@ def other_owner(db: Session) -> tuple[User, Site]:
     db.add(site)
     db.flush()
     return user, site
+
+
+@pytest.fixture
+def categories(db: Session):
+    seed_categories(db)
+    return True
 
 
 def auth_header(token: str) -> dict[str, str]:

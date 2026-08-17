@@ -50,9 +50,6 @@ export function sitePublicUrl(slug: string): string {
     return `${protocol}//${slug}.localhost${port}`;
   }
 
-  const base = hostname.replace(/^www\./, "");
-  const root = base.split(".").length >= 2 ? base.split(".").slice(-2).join(".") : base;
-  // If already on subdomain, rebuild from root domain
   const parts = hostname.replace(/^www\./, "").split(".");
   const domain = parts.length >= 3 ? parts.slice(1).join(".") : parts.join(".");
   return `${protocol}//${slug}.${domain}${port}`;

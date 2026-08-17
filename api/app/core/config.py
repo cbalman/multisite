@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     MAX_IMAGE_MB: int = 5
     MAX_VIDEO_MB: int = 80
     MAX_VIDEOS_PER_PUBLICATION: int = 1
+    MAX_IMAGES_PER_PUBLICATION: int = 8
 
     CORS_ORIGINS: str = "http://localhost,http://localhost:5173"
 

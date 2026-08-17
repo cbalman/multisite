@@ -1,5 +1,6 @@
 from sqlalchemy import select, text
 
+from app.core.categories import seed_categories
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
 from app.core.security import hash_password
@@ -41,6 +42,15 @@ def ensure_superadmin() -> None:
             totp_enabled=False,
         )
         db.add(admin)
+        db.commit()
+    finally:
+        db.close()
+
+
+def ensure_categories() -> None:
+    db = SessionLocal()
+    try:
+        seed_categories(db)
         db.commit()
     finally:
         db.close()

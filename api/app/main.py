@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
-from app.core.bootstrap import ensure_schema_patches, ensure_superadmin
+from app.core.bootstrap import ensure_categories, ensure_schema_patches, ensure_superadmin
 from app.core.config import settings
 from app.core.database import Base, engine
 
@@ -19,6 +19,7 @@ def _bootstrap_runtime() -> None:
     ensure_schema_patches()
     Path(settings.MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
     ensure_superadmin()
+    ensure_categories()
 
 
 _bootstrap_runtime()

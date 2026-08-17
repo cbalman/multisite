@@ -1,10 +1,11 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.database import get_db
 from app.core.security import decode_token
-from app.models import User, UserRole
+from app.models import Site, User, UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
@@ -58,3 +59,17 @@ def get_2fa_setup_superadmin(
     if user.role != UserRole.SUPERADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo super admin")
     return user
+
+
+def get_owned_site(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Site:
+    site = db.scalar(
+        select(Site)
+        .where(Site.owner_id == user.id)
+        .options(selectinload(Site.socials), selectinload(Site.category))
+    )
+    if not site:
+        raise HTTPException(status_code=404, detail="Todavía no tenés un sitio")
+    return site

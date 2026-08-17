@@ -91,11 +91,11 @@ docker compose exec api pytest -q
 chmod +x scripts/test.sh && ./scripts/test.sh
 ```
 
-Cobertura actual: health, auth (login cliente + 2FA admin), alta de sitios por Super Admin, sitios públicos, aislamiento entre tenants.
+Cobertura actual: health, auth (login cliente + 2FA admin), alta de sitios por Super Admin, panel del dueño (perfil, contacto, redes, publicaciones, uploads), sitios públicos, aislamiento entre tenants.
 
-1. CRUD de publicaciones (foto + 1 video)
-2. Edición de perfil / WhatsApp / redes
-3. Onboarding corto post-primer-ingreso del cliente
-4. Suspender sitio + impersonation
-5. Tracking visitas + clicks WhatsApp
-6. Spaces (DO) para media en producción
+## Próximos pasos de desarrollo
+
+1. Onboarding corto post-primer-ingreso del cliente
+2. Super Admin: suspender sitio + impersonation
+3. Tracking visitas + clicks WhatsApp
+4. Spaces (DO) para media en producción
